@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// 全局变量
+:root {
+  --primary-color: #409eff;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+  
+  --bg-color: #f5f7fa;
+  --text-color: #303133;
+  --text-secondary: #606266;
+  --border-color: #dcdfe6;
+}
+
+// 全局样式
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+}
+
+// 页面容器
+.page-container {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  min-height: calc(100vh - 140px);
+}
+
+// 页面标题
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-color);
+  }
+}
+
+// 搜索表单
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+// 表格操作列
+.table-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+// 状态标签
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  
+  &.success {
+    background: #f0f9eb;
+    color: var(--success-color);
+  }
+  
+  &.warning {
+    background: #fdf6ec;
+    color: var(--warning-color);
+  }
+  
+  &.danger {
+    background: #fef0f0;
+    color: var(--danger-color);
+  }
+  
+  &.info {
+    background: #f4f4f5;
+    color: var(--info-color);
+  }
+}
+
+// 卡片样式
+.stat-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+  }
+  
+  .stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+// 获奖滚动展示
+.award-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px 0;
+  
+  .marquee-content {
+    display: inline-block;
+    animation: marquee 30s linear infinite;
+  }
+  
+  .award-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 24px;
+    margin-right: 32px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    color: #fff;
+    
+    .award-icon {
+      margin-right: 8px;
+      font-size: 18px;
+    }
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+// 表单布局
+.form-section {
+  margin-bottom: 24px;
+  
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 3px solid var(--primary-color);
+  }
+}
+
+// 空状态
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  
+  .empty-icon {
+    font-size: 64px;
+    color: #c0c4cc;
+    margin-bottom: 16px;
+  }
+  
+  .empty-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+// 动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-20px);
+  opacity: 0;
+}

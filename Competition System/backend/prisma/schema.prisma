@@ -1,0 +1,345 @@
+// Prisma schema for 竞赛管理系统
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户角色枚举
+enum Role {
+  SUPER_ADMIN      // 超级管理员
+  SCHOOL_ADMIN     // 校级管理员
+  DEPARTMENT_ADMIN // 院级管理员
+  TEACHER          // 教师
+}
+
+// 竞赛等级枚举
+enum CompetitionLevel {
+  A
+  B
+  C
+  D
+  E
+}
+
+// 区域枚举
+enum Region {
+  NATIONAL   // 国赛
+  PROVINCIAL // 省赛
+  SCHOOL     // 校赛
+}
+
+// 申报状态枚举
+enum ApplicationStatus {
+  DRAFT              // 草稿
+  PENDING_DEPARTMENT // 待院级审核
+  PENDING_SCHOOL     // 待校级审核
+  APPROVED           // 已通过
+  REJECTED           // 已驳回
+  REVISION_REQUIRED  // 需修改
+}
+
+// 审批动作枚举
+enum ApprovalAction {
+  APPROVE          // 批准
+  REJECT           // 驳回
+  REQUEST_REVISION // 要求修改
+}
+
+// 获奖等级枚举
+enum AwardLevel {
+  SPECIAL_PRIZE // 特等奖
+  FIRST_PRIZE   // 一等奖
+  SECOND_PRIZE  // 二等奖
+  THIRD_PRIZE   // 三等奖
+  EXCELLENCE    // 优秀奖
+}
+
+// 获奖状态枚举
+enum AwardStatus {
+  PENDING_DEPARTMENT // 待院级审核
+  PENDING_SCHOOL     // 待校级审核
+  APPROVED           // 已通过
+  REJECTED           // 已驳回
+}
+
+// 学院表
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  code      String   @unique @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  users        User[]
+  competitions Competition[]
+  students     Student[]
+
+  @@map("departments")
+}
+
+// 用户表
+model User {
+  id               Int      @id @default(autoincrement())
+  employeeId       String   @unique @map("employee_id") @db.VarChar(50)
+  password         String   @db.VarChar(255)
+  name             String   @db.VarChar(50)
+  gender           String?  @db.VarChar(10)
+  departmentId     Int?     @map("department_id")
+  bankAccount      String?  @map("bank_account") @db.VarChar(255) // 加密存储
+  bankName         String?  @map("bank_name") @db.VarChar(100)
+  email            String?  @db.VarChar(100) // 邮箱（超级管理员验证用）
+  emailVerified    Boolean  @default(false) @map("email_verified") // 邮箱是否已验证
+  role             Role     @default(TEACHER)
+  performanceScore Decimal  @default(0) @map("performance_score") @db.Decimal(10, 2)
+  monthlyEditCount Int      @default(0) @map("monthly_edit_count")
+  lastEditMonth    String?  @map("last_edit_month") @db.VarChar(7) // 格式：YYYY-MM
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  department       Department?       @relation(fields: [departmentId], references: [id])
+  applications     Application[]     @relation("TeacherApplications")
+  coApplications   Application[]     @relation("CoTeacherApplications")
+  approvalRecords  ApprovalRecord[]
+  operationLogs    OperationLog[]
+  infoEditLogs     UserInfoEditLog[]
+
+  @@map("users")
+}
+
+// 用户信息修改日志
+model UserInfoEditLog {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  fieldName    String   @map("field_name") @db.VarChar(50)
+  oldValue     String?  @map("old_value") @db.Text
+  newValue     String?  @map("new_value") @db.Text
+  penaltyScore Decimal  @default(0) @map("penalty_score") @db.Decimal(10, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_info_edit_logs")
+}
+
+// 竞赛表
+model Competition {
+  id               Int              @id @default(autoincrement())
+  name             String           @db.VarChar(200)
+  track            String?          @db.VarChar(100) // 赛道
+  region           Region
+  level            CompetitionLevel
+  ranking          Int?             // 仅A/B类有排名
+  year             Int
+  session          String?          @db.VarChar(50) // 届数
+  leadDepartmentId Int?             @map("lead_department_id")
+  validUntil       DateTime?        @map("valid_until") // 有效期
+  requiresFunding  Boolean          @default(false) @map("requires_funding")
+  createdBy        Int?             @map("created_by")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // 关联
+  leadDepartment Department?              @relation(fields: [leadDepartmentId], references: [id])
+  applications   Application[]
+  editLogs       CompetitionEditLog[]
+
+  @@map("competitions")
+}
+
+// 竞赛修改日志
+model CompetitionEditLog {
+  id            Int      @id @default(autoincrement())
+  competitionId Int      @map("competition_id")
+  editorId      Int      @map("editor_id")
+  fieldName     String   @map("field_name") @db.VarChar(50)
+  oldValue      String?  @map("old_value") @db.Text
+  newValue      String?  @map("new_value") @db.Text
+  penaltyScore  Decimal  @default(0) @map("penalty_score") @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // 关联
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@map("competition_edit_logs")
+}
+
+// 学生表
+model Student {
+  id           Int      @id @default(autoincrement())
+  studentId    String   @unique @map("student_id") @db.VarChar(50)
+  name         String   @db.VarChar(50)
+  departmentId Int?     @map("department_id")
+  major        String?  @db.VarChar(100)
+  contact      String?  @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  department   Department?                @relation(fields: [departmentId], references: [id])
+  applications ApplicationStudent[]
+
+  @@map("students")
+}
+
+// 申报表
+model Application {
+  id            Int               @id @default(autoincrement())
+  competitionId Int               @map("competition_id")
+  teacherId     Int               @map("teacher_id")
+  coTeacherId   Int?              @map("co_teacher_id") // 第二指导教师
+  status        ApplicationStatus @default(DRAFT)
+  submittedAt   DateTime?         @map("submitted_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  // 关联
+  competition     Competition          @relation(fields: [competitionId], references: [id])
+  teacher         User                 @relation("TeacherApplications", fields: [teacherId], references: [id])
+  coTeacher       User?                @relation("CoTeacherApplications", fields: [coTeacherId], references: [id])
+  students        ApplicationStudent[]
+  approvalRecords ApprovalRecord[]
+  award           Award?
+
+  @@map("applications")
+}
+
+// 申报-学生关联表
+model ApplicationStudent {
+  id            Int @id @default(autoincrement())
+  applicationId Int @map("application_id")
+  studentId     Int @map("student_id")
+
+  // 关联
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  student     Student     @relation(fields: [studentId], references: [id])
+
+  @@unique([applicationId, studentId])
+  @@map("application_students")
+}
+
+// 审批记录表
+model ApprovalRecord {
+  id            Int            @id @default(autoincrement())
+  applicationId Int            @map("application_id")
+  approverId    Int            @map("approver_id")
+  action        ApprovalAction
+  comment       String?        @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  // 关联
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  approver    User        @relation(fields: [approverId], references: [id])
+
+  @@map("approval_records")
+}
+
+// 获奖记录表
+model Award {
+  id               Int         @id @default(autoincrement())
+  applicationId    Int         @unique @map("application_id")
+  awardLevel       AwardLevel  @map("award_level")
+  certificateNo    String      @unique @map("certificate_no") @db.VarChar(50)
+  summaryPdf       String?     @map("summary_pdf") @db.VarChar(500) // PDF文件路径
+  performanceScore Decimal     @default(0) @map("performance_score") @db.Decimal(10, 2)
+  workload         Decimal     @default(0) @db.Decimal(10, 2) // 工作量学时
+  rewardAmount     Decimal     @default(0) @map("reward_amount") @db.Decimal(10, 2)
+  status           AwardStatus @default(PENDING_DEPARTMENT)
+  approvedAt       DateTime?   @map("approved_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  // 关联
+  application     Application           @relation(fields: [applicationId], references: [id])
+  approvalRecords AwardApprovalRecord[]
+
+  @@map("awards")
+}
+
+// 获奖审批记录表
+model AwardApprovalRecord {
+  id         Int            @id @default(autoincrement())
+  awardId    Int            @map("award_id")
+  approverId Int            @map("approver_id")
+  action     ApprovalAction
+  comment    String?        @db.Text
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  // 关联
+  award Award @relation(fields: [awardId], references: [id], onDelete: Cascade)
+
+  @@map("award_approval_records")
+}
+
+// 绩效规则表
+model PerformanceRule {
+  id               Int              @id @default(autoincrement())
+  competitionLevel CompetitionLevel @map("competition_level")
+  awardLevel       AwardLevel       @map("award_level")
+  performanceScore Decimal          @map("performance_score") @db.Decimal(10, 2)
+  workload         Decimal          @db.Decimal(10, 2) // 工作量学时
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@unique([competitionLevel, awardLevel])
+  @@map("performance_rules")
+}
+
+// 奖励规则表
+model RewardRule {
+  id               Int              @id @default(autoincrement())
+  competitionLevel CompetitionLevel @map("competition_level")
+  awardLevel       AwardLevel       @map("award_level")
+  rewardAmount     Decimal          @map("reward_amount") @db.Decimal(10, 2)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@unique([competitionLevel, awardLevel])
+  @@map("reward_rules")
+}
+
+// 系统配置表
+model SystemConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(100)
+  value     String   @db.Text
+  comment   String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_configs")
+}
+
+// 操作日志表
+model OperationLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String   @db.VarChar(255)
+  details   String?  @db.Text
+  ip        String?  @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("operation_logs")
+}
+
+// 数据备份记录表
+model BackupRecord {
+  id        Int      @id @default(autoincrement())
+  filename  String   @db.VarChar(255)
+  filePath  String   @map("file_path") @db.VarChar(500)
+  fileSize  BigInt   @map("file_size")
+  createdBy Int      @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("backup_records")
+}
