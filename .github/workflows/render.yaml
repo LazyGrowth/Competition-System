@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: competition-system-backend
+    env: node
+    plan: free
+    buildCommand: |
+      cd "Competition System/backend"
+      npm install
+      npx prisma generate
+      npm run build
+    startCommand: |
+      cd "Competition System/backend"
+      npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromSecret: DATABASE_URL
+      - key: JWT_SECRET
+        fromSecret: JWT_SECRET
+      - key: PORT
+        value: 10000
