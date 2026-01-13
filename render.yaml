@@ -3,20 +3,14 @@ services:
     name: competition-system-backend
     env: node
     plan: free
-    # 核心改进：直接指定根目录，这样下面的命令就不需要再写 cd 了
-    rootDir: "Competition System/backend"
+    # 请确保你的 GitHub 仓库根目录下确实有这个文件夹路径
+    rootDir: "Competition System/backend" 
     buildCommand: |
       npm install
       npx prisma generate
-      npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-      # 数据库和密钥建议手动在 Render Dashboard 设置，或者通过以下方式保持占位
-      - key: DATABASE_URL
-        sync: false
-      - key: JWT_SECRET
-        sync: false
